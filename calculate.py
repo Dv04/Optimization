@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import pandas as pd
 from constants import capacity_dict
 from cost import calculate_cost
 
@@ -60,6 +61,6 @@ def generate_final_demand_array(capacity_dict):
 final_array = generate_final_demand_array(capacity_dict)
 print(final_array)
 
-with open("result.csv", "w") as f:
-    for row in final_array:
-        f.write("%s\n" % row)
+# save output as csv file
+df = pd.DataFrame(final_array)
+df.to_csv("final_demand.csv")
