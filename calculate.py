@@ -1,4 +1,6 @@
 import random
+import numpy as np
+from constants import capacity_dict
 
 
 def calculate_final_demand(capacity_dict):
@@ -25,15 +27,26 @@ def calculate_final_demand(capacity_dict):
 
 def generate_final_demand(capacity_dict):
     result = calculate_final_demand(capacity_dict)
-    while result[5] < 0:
+    while not (
+        capacity_dict["min_capacity"][5] < result[5] < capacity_dict["max_capacity"][4]
+    ):
         result = calculate_final_demand(capacity_dict)
     return result
 
 
 def generate_final_demand_array(capacity_dict):
-    demand_array = []
-    for hour in range(1, 25):
-        capacity_dict["final_demand"] = capacity_dict[f"hour_{hour}"]
-        demand = generate_final_demand(capacity_dict)
-        demand_array.append(demand)
+    demand_array = np.empty((100, 145))
+    for row in range(100):
+        for hour in range(1, 25):
+            capacity_dict["final_demand"] = capacity_dict[f"hour_demand"][hour]
+            demand = generate_final_demand(capacity_dict)
+            demand_array[row, (hour - 1) * 6 : hour * 6] = demand[:6]
+            demand_array[row, -1] = calculate_cost(
+                demand
+            )  # Replace `calculate_cost` with your actual cost function
+
     return demand_array
+
+
+final_array = generate_final_demand_array(capacity_dict)
+print(final_array)
