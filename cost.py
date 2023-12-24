@@ -24,11 +24,19 @@ def calculate_cost(
     :param P_min: array - the P_min values for each k, should be a 1D array of length DER
     :return: float - the computed cost
     """
+    count = 0
     F1 = 0
     # Perform the double summation
     for t in range(1, H + 1):
-        for k in range(1, DER):
+        for k in range(1, DER + 1):
             F1 += (
-                (a[k] * P[(t - 1) * 6 + k] ** 2) + (b[k] * P[(t - 1) * 6 + k]) + c[k]
-            ) + (e[k] * np.sin(theta[k]) * (P_min[k] - P[(t - 1) * 6 + k]))
-    return F1
+                (a[k - 1] * P[(t - 1) * 6 + k - 1] ** 2)
+                + (b[k - 1] * P[(t - 1) * 6 + k - 1])
+                + c[k - 1]
+            ) + abs(
+                e[k - 1]
+                * np.sin(theta[k - 1] * (P_min[k - 1] - P[(t - 1) * 6 + k - 1]))
+            )
+            count += 1
+
+    return F1, count
