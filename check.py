@@ -15,7 +15,7 @@ def check_output():
 
         for i in range(len(data) - 1):
             if (
-                (capacity_dict["min_capacity"][i % 6] - 0.1)
+                (capacity_dict["min_capacity"][i % 6])
                 <= data[i]
                 <= capacity_dict["max_capacity"][i % 6]
             ) and data[i] > 0:
@@ -25,7 +25,7 @@ def check_output():
                     " | ",
                     data[i],
                     " | Wanted: [",
-                    (capacity_dict["min_capacity"][i % 6] - 0.1),
+                    (capacity_dict["min_capacity"][i % 6]),
                     ",",
                     capacity_dict["max_capacity"][i % 6],
                     "]" + "\033[0m",
@@ -37,7 +37,7 @@ def check_output():
                     " | ",
                     data[i],
                     " | Wanted: [",
-                    (capacity_dict["min_capacity"][i % 6] - 0.1),
+                    (capacity_dict["min_capacity"][i % 6]),
                     ",",
                     capacity_dict["max_capacity"][i % 6],
                     "]",
