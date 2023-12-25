@@ -1,6 +1,6 @@
 capacity_dict = {
     "max_capacity": [200, 80, 50, 35, 30, 40],
-    "min_capacity": [50.1, 20.1, 15.1, 10.1, 10.1, 12.1],
+    "min_capacity": [50, 20, 15, 10, 10, 12],
     "hour_demand": [
         166,
         196,
