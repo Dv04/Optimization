@@ -89,9 +89,10 @@ def jaya_algorithm():
     for iteration in range(NUM_ITERATIONS):
         best_solution = population[np.argmin(population[:, -1])]
         # worst_solution = population[np.argmax(population[:, -1])]
-
-        # value of A for rat algo
-        A = 1 + math.cos(math.pi *  iteration / NUM_ITERATIONS)
+        x = 1
+        y = 5
+        R = math.floor((y-x) * random.random() + x)
+        A = (R-iteration)*((R)/NUM_ITERATIONS)
 
         # Update each solution
         for i in range(NUM_SOLUTIONS):
@@ -141,18 +142,6 @@ def jaya_algorithm():
         current_best_cost = np.min(population[:, -1])
         min_iter[iteration] = current_best_cost
         print("Iteration", iteration, "completed with best cost:", current_best_cost)
-
-        # # Check for termination condition
-        # if round(current_best_cost, DECIMAL_ACCURACY) == round(
-        #     previous_best_cost, DECIMAL_ACCURACY
-        # ):
-        #     no_change_count += 1
-        #     if no_change_count >= NO_CHANGE_THRESHOLD:
-        #         print("Early termination at iteration", iteration)
-        #         break
-        # else:
-        #     no_change_count = 0
-        #     previous_best_cost = current_best_cost
 
     # Plot the cost vs iteration graph
     plt.plot(list(min_iter.keys()), list(min_iter.values()))
