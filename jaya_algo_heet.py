@@ -9,8 +9,8 @@ from calculate import calculate_final_demand
 from check import check_output
 
 # Constants and initial setup
-NUM_SOLUTIONS = 10  # Population size
-NUM_ITERATIONS = 5
+NUM_SOLUTIONS = 100  # Population size
+NUM_ITERATIONS = 1000
 NO_CHANGE_THRESHOLD = 4  # Terminate if no significant change for this many iterations
 NUM_HOURS = 24
 NUM_DER = 6
@@ -81,65 +81,74 @@ def generate_initial_population():
 def jaya_algorithm():
     # Initialize population
     population = generate_initial_population()
-    
+
     min_iter = {}  # To track cost at each iteration for plotting
-
-    def number_generator():
-        r1, r2 = random.random(), random.random()
-        return r1, r2
-
-
-    def num_gen(j, r1, r2):
-        new_solution[j] += r1 * (best_solution[j] - abs(new_solution[j])) - r2 * (
-            worst_solution[j] - abs(new_solution[j])
-        )
-
-    def regenerate_previous_values():
-        r1, r2 = number_generator()
-        print("index:", i, r1, r2)
-        for j in range(NUM_DER * NUM_HOURS):
-            num_gen(j, r1, r2)
 
     for iteration in range(NUM_ITERATIONS):
         best_solution = population[np.argmin(population[:, -1])]
         worst_solution = population[np.argmax(population[:, -1])]
 
-        # Update each solution
         for i in range(NUM_SOLUTIONS):
             new_solution = np.copy(population[i])
 
-            while True:
-                regenerate_previous_values()
+            r1, r2 = random.random(), random.random()
+
+            for j in range(NUM_DER * NUM_HOURS):
+                unit_index = j % NUM_DER
+
+                if not j % NUM_DER == NUM_DER - 1:
+                    new_solution[j] += r1 * (best_solution[j] - abs(new_solution[j])) - r2 * (
+                        worst_solution[j] - abs(new_solution[j])
+                    )
+
+                    new_solution[j] = max(
+                        capacity_dict["min_capacity"][unit_index], new_solution[j]
+                    )
+                    new_solution[j] = min(
+                        capacity_dict["max_capacity"][unit_index], new_solution[j]
+                    )
+                else:
+                    new_solution[j] = capacity_dict["hour_demand"][j // NUM_DER] - np.sum(new_solution[j - NUM_DER + 1 : j])
+
+            valid = np.all(
+                np.logical_and.reduce(
+                    (
+                        capacity_dict["min_capacity"][unit_index]
+                        <= new_solution[j]
+                        <= capacity_dict["max_capacity"][unit_index]
+                        for j in range(5, NUM_DER * NUM_HOURS, 6)
+                    )
+                )
+            )
+
+            while not valid:
+                r1, r2 = random.random(), random.random()
 
                 for j in range(NUM_DER * NUM_HOURS):
                     unit_index = j % NUM_DER
 
                     if not j % NUM_DER == NUM_DER - 1:
-                        if capacity_dict["min_capacity"][unit_index] <= new_solution[j] <= capacity_dict["max_capacity"][unit_index]:
-                            pass
-                        else:
-                            # Constraint checking: Ensure values are within min and max capacity
-                            new_solution[j] = max(
-                                capacity_dict["min_capacity"][unit_index], new_solution[j]
-                            )
-                            new_solution[j] = min(
-                                capacity_dict["max_capacity"][unit_index], new_solution[j]
-                            )
+                        new_solution[j] += r1 * (best_solution[j] - abs(new_solution[j])) - r2 * (
+                            worst_solution[j] - abs(new_solution[j])
+                        )
+
+                        new_solution[j] = max(
+                            capacity_dict["min_capacity"][unit_index], new_solution[j]
+                        )
+                        new_solution[j] = min(
+                            capacity_dict["max_capacity"][unit_index], new_solution[j]
+                        )
                     else:
                         new_solution[j] = capacity_dict["hour_demand"][j // NUM_DER] - np.sum(new_solution[j - NUM_DER + 1 : j])
 
-                if all(
-                    capacity_dict["min_capacity"][unit_index]
-                    <= new_solution[5]
-                    <= capacity_dict["max_capacity"][unit_index]
-                    for j in range(5, NUM_DER * NUM_HOURS, 6)
-                ):
-                    print("This is what you want")
-                    break  # Exit the loop if the entire row satisfies the condition
-
-                print("Regenerating entire row: Iteration", iteration, "Index:", i)
-
-            # Update the cost for the new solution
+                valid = np.all(
+                    np.logical_and.reduce(
+                        capacity_dict["min_capacity"][unit_index]
+                        <= new_solution[j]
+                        <= capacity_dict["max_capacity"][unit_index]
+                        for j in range(5, NUM_DER * NUM_HOURS, 6)
+                    )
+                )
             new_solution[-1], _ = calculate_cost(
                 H=NUM_HOURS,
                 DER=NUM_DER,
@@ -152,16 +161,13 @@ def jaya_algorithm():
                 P_min=capacity_dict["min_capacity"],
             )
 
-            # Replace the old solution if the new one is better
             if new_solution[-1] < population[i, -1]:
                 population[i] = new_solution
 
-        # Log and plot progress
         current_best_cost = np.min(population[:, -1])
         min_iter[iteration] = current_best_cost
-        print("Iteration", iteration, "completed with best cost:", current_best_cost)
+        print("Regenerating entire row: Iteration", iteration, "Best cost:", current_best_cost)
 
-    # Plot the cost vs iteration graph
     plt.plot(list(min_iter.keys()), list(min_iter.values()))
     plt.xlabel("Iteration")
     plt.ylabel("Cost")
@@ -169,7 +175,6 @@ def jaya_algorithm():
     plt.savefig("cost_vs_iteration.png")
     plt.show()
 
-    # Return the best solution found
     return population[np.argmin(population[:, -1])]
 
 
