@@ -3,16 +3,15 @@ import numpy as np
 import random
 import pandas as pd
 import matplotlib.pyplot as plt
-from constants import capacity_dict, min_iter
+from constants import capacity_dict
 from cost import calculate_cost
 from calculate import calculate_final_demand
 from check import check_output
 
 # Constants and initial setup
-NUM_SOLUTIONS = 100  # Population size
-NUM_ITERATIONS = 100
+NUM_SOLUTIONS = 10  # Population size
+NUM_ITERATIONS = 5
 NO_CHANGE_THRESHOLD = 4  # Terminate if no significant change for this many iterations
-DECIMAL_ACCURACY = 10  # Up to 5th decimal point
 NUM_HOURS = 24
 NUM_DER = 6
 NUM_COLUMNS = NUM_HOURS * NUM_DER + 1  # 144 for power values, 1 for cost
@@ -82,10 +81,7 @@ def generate_initial_population():
 def jaya_algorithm():
     # Initialize population
     population = generate_initial_population()
-
-    # Main loop
-    no_change_count = 0
-    previous_best_cost = float("inf")
+    
     min_iter = {}  # To track cost at each iteration for plotting
 
     def number_generator():
@@ -93,15 +89,16 @@ def jaya_algorithm():
         return r1, r2
 
 
-    def num_gen(j):
-        r1, r2 = number_generator()
+    def num_gen(j, r1, r2):
         new_solution[j] += r1 * (best_solution[j] - abs(new_solution[j])) - r2 * (
             worst_solution[j] - abs(new_solution[j])
         )
 
-    def regenerate_previous_values(start_index):
-        for k in range(start_index, start_index + 5):
-            num_gen(k)
+    def regenerate_previous_values():
+        r1, r2 = number_generator()
+        print("index:", i, r1, r2)
+        for j in range(NUM_DER * NUM_HOURS):
+            num_gen(j, r1, r2)
 
     for iteration in range(NUM_ITERATIONS):
         best_solution = population[np.argmin(population[:, -1])]
@@ -110,36 +107,38 @@ def jaya_algorithm():
         # Update each solution
         for i in range(NUM_SOLUTIONS):
             new_solution = np.copy(population[i])
-            for j in range(NUM_DER * NUM_HOURS):
-                unit_index = j % NUM_DER
-                if not j % NUM_DER == NUM_DER - 1:
-                    num_gen(j)
-                else:
-                    hour_demand = capacity_dict["hour_demand"][j // NUM_DER]
-                    new_solution_hour = new_solution[j - NUM_DER + 1 : j]
-                    new_solution_hour_sum = np.sum(new_solution_hour)
-                    new_solution[j] = hour_demand - new_solution_hour_sum
 
-                    while not (
-                        capacity_dict["min_capacity"][unit_index]
-                        <= new_solution[j]
-                        <= capacity_dict["max_capacity"][unit_index]
-                    ):
-                        regenerate_previous_values(j - 5)
-                        # Recalculate the 6th value again after regenerating the previous five values
-                        new_solution[j] = capacity_dict["hour_demand"][
-                            j // NUM_DER
-                        ] - np.sum(new_solution[j - NUM_DER + 1 : j])
+            while True:
+                regenerate_previous_values()
 
-                # Constraint checking: Ensure values are within min and max capacity
-                new_solution[j] = max(
-                    capacity_dict["min_capacity"][unit_index], new_solution[j]
-                )
-                new_solution[j] = min(
-                    capacity_dict["max_capacity"][unit_index], new_solution[j]
-                )
+                for j in range(NUM_DER * NUM_HOURS):
+                    unit_index = j % NUM_DER
 
-                
+                    if not j % NUM_DER == NUM_DER - 1:
+                        if capacity_dict["min_capacity"][unit_index] <= new_solution[j] <= capacity_dict["max_capacity"][unit_index]:
+                            pass
+                        else:
+                            # Constraint checking: Ensure values are within min and max capacity
+                            new_solution[j] = max(
+                                capacity_dict["min_capacity"][unit_index], new_solution[j]
+                            )
+                            new_solution[j] = min(
+                                capacity_dict["max_capacity"][unit_index], new_solution[j]
+                            )
+                    else:
+                        new_solution[j] = capacity_dict["hour_demand"][j // NUM_DER] - np.sum(new_solution[j - NUM_DER + 1 : j])
+
+                if all(
+                    capacity_dict["min_capacity"][unit_index]
+                    <= new_solution[5]
+                    <= capacity_dict["max_capacity"][unit_index]
+                    for j in range(5, NUM_DER * NUM_HOURS, 6)
+                ):
+                    print("This is what you want")
+                    break  # Exit the loop if the entire row satisfies the condition
+
+                print("Regenerating entire row: Iteration", iteration, "Index:", i)
+
             # Update the cost for the new solution
             new_solution[-1], _ = calculate_cost(
                 H=NUM_HOURS,
