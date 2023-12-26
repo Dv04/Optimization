@@ -177,7 +177,8 @@ def jaya_algorithm():
 best_solution = jaya_algorithm()
 # print("Best Solution:", best_solution)
 
-check_output()
 
 # Save the best solution to a file
 pd.DataFrame(best_solution.reshape(1, -1)).to_csv("best_solution_new.csv", index=False)
+
+check_output()
