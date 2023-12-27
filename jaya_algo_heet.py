@@ -10,7 +10,7 @@ from check import check_output
 
 # Constants and initial setup
 NUM_SOLUTIONS = 5  # Population size
-NUM_ITERATIONS = 5
+NUM_ITERATIONS = 10
 NO_CHANGE_THRESHOLD = 4  # Terminate if no significant change for this many iterations
 NUM_HOURS = 24
 NUM_DER = 6
@@ -197,7 +197,22 @@ def jaya_algorithm():
                     break
                 
             print("Iteration:", iteration, "Valid:", valid)
+            ctn = 50
+
             while not valid:
+                if ctn == 0:
+                    num_gen()
+                    valid = True
+                    for j in range(5, NUM_DER * NUM_HOURS, 6):
+                        if not (
+                            capacity_dict["min_capacity"][5]
+                            <= new_solution[j]
+                            <= capacity_dict["max_capacity"][5]
+                        ):
+                            valid = False
+                            slice_num = j
+                            break
+
                 regen_six_slice(new_solution, slice_num - 5, NUM_ITERATIONS, iteration)
                 valid = True
                 for j in range(5, NUM_DER * NUM_HOURS, 6):
@@ -211,6 +226,7 @@ def jaya_algorithm():
 
                         print("Iteration:", iteration, "Valid:", valid, "Index:", i, "Slice:", slice_num // 6)
                         break
+                ctn -= 1
                 
             new_solution[-1], _ = calculate_cost(
                 H=NUM_HOURS,
