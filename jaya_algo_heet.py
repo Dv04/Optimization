@@ -9,8 +9,8 @@ from calculate import calculate_final_demand
 from check import check_output
 
 # Constants and initial setup
-NUM_SOLUTIONS = 5  # Population size
-NUM_ITERATIONS = 10
+NUM_SOLUTIONS = 10  # Population size
+NUM_ITERATIONS = 3
 NO_CHANGE_THRESHOLD = 4  # Terminate if no significant change for this many iterations
 NUM_HOURS = 24
 NUM_DER = 6
@@ -197,10 +197,19 @@ def jaya_algorithm():
                     break
                 
             print("Iteration:", iteration, "Valid:", valid)
-            ctn = 50
+            if slice_num is not None:
+                if slice_num // 6 < 10:
+                    ctn = 100000
+                elif 10 <= slice_num // 6 < 15:
+                    ctn = 150000
+                elif 15 <= slice_num // 6 < 20:
+                    ctn = 200000
+                else:
+                    ctn = 225000
 
             while not valid:
                 if ctn == 0:
+                    print("New row generated")
                     num_gen()
                     valid = True
                     for j in range(5, NUM_DER * NUM_HOURS, 6):
@@ -222,10 +231,21 @@ def jaya_algorithm():
                         <= capacity_dict["max_capacity"][5]
                     ):
                         valid = False
+                        copy = slice_num
                         slice_num = j
-
-                        print("Iteration:", iteration, "Valid:", valid, "Index:", i, "Slice:", slice_num // 6)
+                        
+                        print("Iteration:", iteration, "ctn: ", ctn, "Index:", i, "Slice:", slice_num // 6)
                         break
+                
+                if copy and copy != slice_num:
+                    if slice_num // 6 < 10:
+                        ctn = 100000
+                    elif 10 <= slice_num // 6 < 15:
+                        ctn = 160000
+                    elif 15 <= slice_num // 6 < 20:
+                        ctn = 200000
+                    else:
+                        ctn = 225000
                 ctn -= 1
                 
             new_solution[-1], _ = calculate_cost(
