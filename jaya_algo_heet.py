@@ -9,8 +9,8 @@ from calculate import calculate_final_demand
 from check import check_output
 
 # Constants and initial setup
-NUM_SOLUTIONS = 10  # Population size
-NUM_ITERATIONS = 10
+NUM_SOLUTIONS = 5  # Population size
+NUM_ITERATIONS = 5
 NO_CHANGE_THRESHOLD = 4  # Terminate if no significant change for this many iterations
 NUM_HOURS = 24
 NUM_DER = 6
@@ -80,31 +80,80 @@ def generate_initial_population():
 
 def jaya_algorithm():
 
-    def regen_six_slice(new_solution, start_index):
-        r1, r2 = random.random(), random.random()
+    def regen_six_slice(new_solution, start_index, max_iterations, iteration):
+        # print("Iteration: ", iteration, "start: ", start_index // 6, "This is you don't want")
+        r1 = random.random()  # Make r1 small
+        r2 = random.random()  # Make r2 large
+        # print("R1:", r1, "R2:", r2)
 
-        print("Old slice:", new_solution[start_index : start_index + 6])
+        # print("\n\n\nOld slice:", new_solution[start_index : start_index + 6])
         for j in range(start_index, start_index + 6):
             unit_index = j % NUM_DER
 
             if j % NUM_DER == NUM_DER - 1:
                 new_solution[j] = capacity_dict["hour_demand"][j // NUM_DER] - np.sum(new_solution[j - NUM_DER + 1 : j])
             else:
-                new_solution[j] += r1 * (best_solution[j] - abs(new_solution[j])) - r2 * (
+                new_value = new_solution[j] + r1 * (best_solution[j] - abs(new_solution[j])) - r2 * (
                     worst_solution[j] - abs(new_solution[j])
                 )
-                new_solution[j] = max(
-                    capacity_dict["min_capacity"][unit_index], new_solution[j]
-                )
-                new_solution[j] = min(
-                    capacity_dict["max_capacity"][unit_index], new_solution[j]
-                )
+                new_value = max(capacity_dict["min_capacity"][unit_index], new_value)
+                new_value = min(capacity_dict["max_capacity"][unit_index], new_value)
                 
-        print("New slice:", new_solution[start_index : start_index + 6])
+        # # Additional check for the 6th generator
+        # if unit_index == 5:
+        #     if new_value < capacity_dict["min_capacity"][5]:
+        #         new_value = capacity_dict["min_capacity"][5]  # Set to the minimum value
+        #     elif new_value > capacity_dict["max_capacity"][5]:
+        #         new_value = capacity_dict["max_capacity"][5]  # Set to the maximum value
+
+                new_solution[j] = new_value
+        # print("New slice:", new_solution[start_index : start_index + 6])
+
+        # Calculate total demand after modification
+        total_demand_after = np.sum(new_solution[start_index : start_index + 6])
+        
+        # Adjust total demand to meet the constraints
+        # print("\n\nTotal actual demand: ", capacity_dict["hour_demand"][j % NUM_DER], "current: ", np.sum(new_solution[start_index : start_index + 6]))
+        total_demand_diff = abs(capacity_dict["hour_demand"][j % NUM_DER] - total_demand_after)
+        # print("Total demand diff:", total_demand_diff)
+        temp = [1]
+        ctn = 50
+        # print("While condition: ", 0 < abs(total_demand_diff) <= 10)
+        while len(temp) > 0 and 0 < abs(total_demand_diff) <= 50 and ctn > 0:
+            temp.clear()
+            # total_demand_diff = 0
+            # total_demand_after = np.sum(new_solution[start_index : start_index + 6])
+            # if total_demand_after == math.inf:
+            #     print("Temp:", temp)
+            #     print("Iteration:", iteration,"start index:", start_index, "Total demand after:", total_demand_after)
+            #     print("Total demand diff:", total_demand_diff)
+
+            #     exit(0)
+            for j in range(start_index, start_index + 6):
+                if new_solution[j] - capacity_dict["min_capacity"][j % NUM_DER] >= abs(total_demand_diff):
+                    temp.append(j)
+
+            if len(temp) == 0:
+                break
+            
+            const = total_demand_diff / len(temp)
+            # print("Const:", const, "ctn: ", ctn, "Temp:", temp)
+            
+            for j in temp:
+                if const > 0:
+                    new_solution[j] += const
+                else:
+                    new_solution[j] -= const
+            
+            total_demand_after = np.sum(new_solution[start_index : start_index + 6])
+            total_demand_diff = capacity_dict["hour_demand"][j % NUM_DER] - total_demand_after
+            # print("Total demand after:", total_demand_after, "Total demand diff:", total_demand_diff)
+            ctn -= 1
+        # print("New slice:", new_solution[start_index : start_index + 6])
 
     def num_gen():
         r1, r2 = random.random(), random.random()
-        print()
+        
         for j in range(NUM_DER * NUM_HOURS):
             unit_index = j % NUM_DER
 
@@ -134,7 +183,6 @@ def jaya_algorithm():
         for i in range(NUM_SOLUTIONS):
             new_solution = np.copy(population[i])
 
-            unit_index = (NUM_DER * NUM_HOURS - 1) % NUM_DER
             num_gen()
 
             valid = True
@@ -150,7 +198,7 @@ def jaya_algorithm():
                 
             print("Iteration:", iteration, "Valid:", valid)
             while not valid:
-                regen_six_slice(new_solution, slice_num - 5)
+                regen_six_slice(new_solution, slice_num - 5, NUM_ITERATIONS, iteration)
                 valid = True
                 for j in range(5, NUM_DER * NUM_HOURS, 6):
                     if not (
