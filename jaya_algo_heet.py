@@ -10,7 +10,7 @@ from check import check_output
 
 # Constants and initial setup
 NUM_SOLUTIONS = 10  # Population size
-NUM_ITERATIONS = 10
+NUM_ITERATIONS = 2
 NO_CHANGE_THRESHOLD = 4  # Terminate if no significant change for this many iterations
 NUM_HOURS = 24
 NUM_DER = 6
@@ -83,7 +83,7 @@ def jaya_algorithm():
     def regen_six_slice(new_solution, start_index):
         r1, r2 = random.random(), random.random()
 
-        print("Old slice:", new_solution[start_index : start_index + 6])
+        # print("Old slice:", new_solution[start_index : start_index + 6])
         for j in range(start_index, start_index + 6):
             unit_index = j % NUM_DER
 
@@ -100,7 +100,7 @@ def jaya_algorithm():
                     capacity_dict["max_capacity"][unit_index], new_solution[j]
                 )
                 
-        print("New slice:", new_solution[start_index : start_index + 6])
+        # print("New slice:", new_solution[start_index : start_index + 6])
 
     def num_gen():
         r1, r2 = random.random(), random.random()
