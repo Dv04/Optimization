@@ -9,8 +9,8 @@ from calculate import calculate_final_demand
 from check import check_output
 
 # Constants and initial setup
-NUM_SOLUTIONS = 100  # Population size
-NUM_ITERATIONS = 1000
+NUM_SOLUTIONS = 10  # Population size
+NUM_ITERATIONS = 10
 NO_CHANGE_THRESHOLD = 4  # Terminate if no significant change for this many iterations
 NUM_HOURS = 24
 NUM_DER = 6
@@ -79,76 +79,91 @@ def generate_initial_population():
 
 
 def jaya_algorithm():
+
+    def regen_six_slice(new_solution, start_index):
+        r1, r2 = random.random(), random.random()
+
+        print("Old slice:", new_solution[start_index : start_index + 6])
+        for j in range(start_index, start_index + 6):
+            unit_index = j % NUM_DER
+
+            if j % NUM_DER == NUM_DER - 1:
+                new_solution[j] = capacity_dict["hour_demand"][j // NUM_DER] - np.sum(new_solution[j - NUM_DER + 1 : j])
+            else:
+                new_solution[j] += r1 * (best_solution[j] - abs(new_solution[j])) - r2 * (
+                    worst_solution[j] - abs(new_solution[j])
+                )
+                new_solution[j] = max(
+                    capacity_dict["min_capacity"][unit_index], new_solution[j]
+                )
+                new_solution[j] = min(
+                    capacity_dict["max_capacity"][unit_index], new_solution[j]
+                )
+                
+        print("New slice:", new_solution[start_index : start_index + 6])
+
+    def num_gen():
+        r1, r2 = random.random(), random.random()
+        print()
+        for j in range(NUM_DER * NUM_HOURS):
+            unit_index = j % NUM_DER
+
+            if j % NUM_DER == NUM_DER - 1:
+                new_solution[j] = capacity_dict["hour_demand"][j // NUM_DER] - np.sum(new_solution[j - NUM_DER + 1 : j])
+            else:
+                new_solution[j] += r1 * (best_solution[j] - abs(new_solution[j])) - r2 * (
+                    worst_solution[j] - abs(new_solution[j])
+                )
+                new_solution[j] = max(
+                    capacity_dict["min_capacity"][unit_index], new_solution[j]
+                )
+                new_solution[j] = min(
+                    capacity_dict["max_capacity"][unit_index], new_solution[j]
+                )
+
     # Initialize population
     population = generate_initial_population()
 
     min_iter = {}  # To track cost at each iteration for plotting
 
     for iteration in range(NUM_ITERATIONS):
+        slice_num :int = None
         best_solution = population[np.argmin(population[:, -1])]
         worst_solution = population[np.argmax(population[:, -1])]
 
         for i in range(NUM_SOLUTIONS):
             new_solution = np.copy(population[i])
 
-            r1, r2 = random.random(), random.random()
+            unit_index = (NUM_DER * NUM_HOURS - 1) % NUM_DER
+            num_gen()
 
-            for j in range(NUM_DER * NUM_HOURS):
-                unit_index = j % NUM_DER
-
-                if not j % NUM_DER == NUM_DER - 1:
-                    new_solution[j] += r1 * (best_solution[j] - abs(new_solution[j])) - r2 * (
-                        worst_solution[j] - abs(new_solution[j])
-                    )
-
-                    new_solution[j] = max(
-                        capacity_dict["min_capacity"][unit_index], new_solution[j]
-                    )
-                    new_solution[j] = min(
-                        capacity_dict["max_capacity"][unit_index], new_solution[j]
-                    )
-                else:
-                    new_solution[j] = capacity_dict["hour_demand"][j // NUM_DER] - np.sum(new_solution[j - NUM_DER + 1 : j])
-
-            valid = np.all(
-                np.logical_and.reduce(
-                    (
-                        capacity_dict["min_capacity"][unit_index]
-                        <= new_solution[j]
-                        <= capacity_dict["max_capacity"][unit_index]
-                        for j in range(5, NUM_DER * NUM_HOURS, 6)
-                    )
-                )
-            )
-
+            valid = True
+            for j in range(5, NUM_DER * NUM_HOURS, 6):
+                if not (
+                    capacity_dict["min_capacity"][5]
+                    <= new_solution[j]
+                    <= capacity_dict["max_capacity"][5]
+                ):
+                    valid = False
+                    slice_num = j
+                    break
+                
+            print("Iteration:", iteration, "Valid:", valid)
             while not valid:
-                r1, r2 = random.random(), random.random()
-
-                for j in range(NUM_DER * NUM_HOURS):
-                    unit_index = j % NUM_DER
-
-                    if not j % NUM_DER == NUM_DER - 1:
-                        new_solution[j] += r1 * (best_solution[j] - abs(new_solution[j])) - r2 * (
-                            worst_solution[j] - abs(new_solution[j])
-                        )
-
-                        new_solution[j] = max(
-                            capacity_dict["min_capacity"][unit_index], new_solution[j]
-                        )
-                        new_solution[j] = min(
-                            capacity_dict["max_capacity"][unit_index], new_solution[j]
-                        )
-                    else:
-                        new_solution[j] = capacity_dict["hour_demand"][j // NUM_DER] - np.sum(new_solution[j - NUM_DER + 1 : j])
-
-                valid = np.all(
-                    np.logical_and.reduce(
-                        capacity_dict["min_capacity"][unit_index]
+                regen_six_slice(new_solution, slice_num - 5)
+                valid = True
+                for j in range(5, NUM_DER * NUM_HOURS, 6):
+                    if not (
+                        capacity_dict["min_capacity"][5]
                         <= new_solution[j]
-                        <= capacity_dict["max_capacity"][unit_index]
-                        for j in range(5, NUM_DER * NUM_HOURS, 6)
-                    )
-                )
+                        <= capacity_dict["max_capacity"][5]
+                    ):
+                        valid = False
+                        slice_num = j
+
+                        print("Iteration:", iteration, "Valid:", valid, "Index:", i, "Slice:", slice_num // 6)
+                        break
+                
             new_solution[-1], _ = calculate_cost(
                 H=NUM_HOURS,
                 DER=NUM_DER,
@@ -164,6 +179,7 @@ def jaya_algorithm():
             if new_solution[-1] < population[i, -1]:
                 population[i] = new_solution
 
+        # print("New solution value: ", new_solution[-1])
         current_best_cost = np.min(population[:, -1])
         min_iter[iteration] = current_best_cost
         print("Regenerating entire row: Iteration", iteration, "Best cost:", current_best_cost)
