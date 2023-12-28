@@ -1,17 +1,18 @@
 import numpy as np
+from constants import capacity_dict
 
 
 # Define the cost function as per the given equation.
 def calculate_cost(
-    H: int,
-    DER: int,
     P: list,
-    a: list,
-    b: list,
-    c: list,
-    e: list,
-    theta: list,
-    P_min: list,
+    H: int = 24,
+    DER: int = 6,
+    a: list = capacity_dict["A"],
+    b: list = capacity_dict["B"],
+    c: list = capacity_dict["C"],
+    e: list = capacity_dict["D"],
+    theta: list = capacity_dict["E"],
+    P_min: list = capacity_dict["min_capacity"],
 ) -> float:
     """
     Calculate the cost function F1 based on the provided parameters.
