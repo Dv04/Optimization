@@ -1,0 +1,160 @@
+m = 3;
+genmat = zeros(24, m);
+bestcost = zeros(24, 1);
+
+Pv = [0 0 0 0 0 0.1398 7.8577 18.7304 27.1595 43.3484 9.1360 4.8614 30.0930 35.5234 12.0931 6.7597 11.5315 3.2737 0 0 0 0 0 0];
+W = [2.6987 10.7333 11.6022 19.7866 9.2783 6.6074 17.5929 30.5077 24.0550 21.0863 15.5405 21.9580 17.2517 12.8143 10.4615 16.5463 4.8607 2.9175 1.4134 0.4858 0.4467 0.7365 1.8624 1.1634];
+L = [145.7840 155.9870 161.0859 166.1833 171.2792 176.3736 181.4667 186.5584 217.0839 237.4135 247.5730 257.7291 247.5730 227.2506 206.9132 186.5584 176.3736 191.6489 206.9132 247.5730 232.3325 196.7381 166.1833 150.8863];
+
+totload = L - Pv - W;
+P = zeros(np, m);
+P0 = zeros(np, m);
+maxite = 500 * 2;
+q = zeros(24, maxite);
+maxl = [150 160 190];
+minl = [37 40 50];
+mem = zeros(np, m);
+ft = zeros(1, np);
+fit_mem = zeros(1, np);
+run = 1;
+
+for h = 1:24
+    h
+
+    for a = 1:np
+        y = -100;
+
+        while (y > maxl(m) || y < minl(m))
+            t = 0;
+
+            for j = 1:m - 1
+                P(a, j) = (rand() * (maxl(j) - minl(j))) + minl(j);
+                t = t + P(a, j);
+            end
+
+            P(a, m) = totload(h) - t;
+            y = P(a, m);
+        end
+
+        fit_mem(a) = forpapercostfun(P(a, :));
+    end
+
+    mem = P;
+    [ss, kk] = min(fit_mem);
+    bestpop = mem(kk, :);
+
+    P0 = P;
+    tic
+
+    for itr = 1:maxite
+        [ss, kk] = min(fit_mem);
+        bestpop = kk;
+        [ss, kk] = max(fit_mem);
+        worstpop = kk;
+
+        npum = ceil(np * rand(1, np));
+
+        for i = 1:np
+
+            for j = 1:m
+                r1 = rand();
+                r2 = rand();
+
+                P(i, j) = P(i, j) + r1 * (mem(bestpop, j) - P(i, j)) - r2 * (mem(worstpop, j) - P(i, j));
+            end
+
+        end
+
+        for i = 1:np
+
+            for j = 1:m - 1
+
+                if P(i, j) < minl(j)
+                    P(i, j) = minl(j);
+
+                elseif P(i, j) > maxl(j)
+                    P(i, j) = maxl(j);
+
+                end
+
+            end
+
+        end
+
+        for i = 1:np
+            summ = 0;
+
+            for j = 1:m - 1
+
+                if P(i, j) < minl(j)
+                    P(i, j) = minl(j);
+
+                elseif P(i, j) > maxl(j)
+                    P(i, j) = maxl(j);
+
+                end
+
+                summ = summ + P(i, j);
+
+            end
+
+            P(i, m) = totload(h) - summ;
+            P(i, :);
+
+            if P(i, m) < minl(m)
+                P(i, m) = minl(m);
+
+            elseif P(i, m) > maxl(m)
+                P(i, m) = maxl(m);
+            end
+
+            P(i, :);
+
+            if sum(P(i, :)) ~= totload(h)
+                P(i, :) = P0(i, :);
+                P(i, :);
+
+            end
+
+            ft(i) = forpapercostfun(P(i, :));
+        end
+
+        ft;
+        P0 = P;
+
+        for i = 1:np
+
+            if ft(i) < fit_mem(i)
+                mem(i, :) = P(i, :);
+                fit_mem(i) = ft(i);
+            end
+
+        end
+
+        [ss, kk] = min(fit_mem);
+        bestpop = mem(kk, :);
+        bestcost(h) = ss;
+        genmat(h, :) = P(kk, :);
+        q(h, itr) = ss;
+
+    end
+
+end
+
+toc
+
+totalcost = sum(bestcost)
+tch = zeros(24, 1);
+
+for hh = 1:24
+    tch(hh) = sum(genmat(hh, :));
+end
+
+[genmat, tch, bestcost];
+bestitrcost = zeros(maxite, 1);
+
+for u = 1:maxite
+    bestitrcost(u) = sum(q(:, u));
+end
+
+plot(bestitrcost);
