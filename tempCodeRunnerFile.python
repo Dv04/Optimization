@@ -1,0 +1,119 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+from cost import calculate_cost
+from constants import capacity_dict
+m = 3
+genmat = np.zeros((24, m))
+bestcost = np.zeros(24)
+
+# Constants from capacity_dict
+max_capacity = capacity_dict["max_capacity"]
+min_capacity = capacity_dict["min_capacity"]
+hour_demand = capacity_dict["hour_demand"]
+
+# Update maxl and minl
+maxl = max_capacity[:m]  # assuming 'm' is the number of DERs you are considering
+minl = min_capacity[:m]
+
+# Update totload
+totload = np.array(hour_demand)
+n_p = 100 # Assuming n_p is defined somewhere as the population size
+P = np.zeros((n_p, m))
+P0 = np.zeros((n_p, m))
+maxite = 1000 # Assuming maxite is defined (500*2 in the original code)
+q = np.zeros((24, maxite))
+mem = np.zeros((n_p, m))
+ft = np.zeros(n_p)
+fit_mem = np.zeros(n_p)
+
+for h in range(24):
+    print(h)
+
+    for a in range(n_p):
+        y = -100
+
+        while y > maxl[m-1] or y < minl[m-1]:
+            t = 0
+            for j in range(m-1):
+                P[a, j] = random.random() * (maxl[j] - minl[j]) + minl[j]
+                t += P[a, j]
+
+            P[a, m-1] = totload[h] - t
+            y = P[a, m-1]
+
+        fit_mem[a] = calculate_cost(P=P[a, :])
+
+    mem = np.copy(P)
+    kk = np.argmin(fit_mem)
+    bestpop = mem[kk, :]
+
+    P0 = np.copy(P)
+
+    for itr in range(maxite):
+        kk = np.argmin(fit_mem)
+        bestpop = kk
+        kk = np.argmax(fit_mem)
+        worstpop = kk
+
+        npum = np.ceil(n_p * np.random.rand(1, n_p)).astype(int)
+
+        for i in range(n_p):
+            for j in range(m):
+                r1 = random.random()
+                r2 = random.random()
+                P[i, j] += r1 * (mem[bestpop, j] - P[i, j]) - r2 * (mem[worstpop, j] - P[i, j])
+
+        for i in range(n_p):
+            for j in range(m-1):
+                if P[i, j] < minl[j]:
+                    P[i, j] = minl[j]
+                elif P[i, j] > maxl[j]:
+                    P[i, j] = maxl[j]
+
+        for i in range(n_p):
+            summ = 0
+            for j in range(m-1):
+                if P[i, j] < minl[j]:
+                    P[i, j] = minl[j]
+                elif P[i, j] > maxl[j]:
+                    P[i, j] = maxl[j]
+                summ += P[i, j]
+
+            P[i, m-1] = totload[h] - summ
+            if P[i, m-1] < minl[m-1]:
+                P[i, m-1] = minl[m-1]
+            elif P[i, m-1] > maxl[m-1]:
+                P[i, m-1] = maxl[m-1]
+
+            if sum(P[i, :]) != totload[h]:
+                P[i, :] = P0[i, :]
+
+            ft[i] = calculate_cost(P=P[i, :])
+
+        P0 = np.copy(P)
+
+        for i in range(n_p):
+            if ft[i] < fit_mem[i]:
+                mem[i, :] = P[i, :]
+                fit_mem[i] = ft[i]
+
+        kk = np.argmin(fit_mem)
+        bestpop = mem[kk, :]
+        bestcost[h] = fit_mem[kk]
+        genmat[h, :] = P[kk, :]
+        q[h, itr] = fit_mem[kk]
+
+totalcost = sum(bestcost)
+tch = np.zeros(24)
+
+for hh in range(24):
+    tch[hh] = sum(genmat[hh, :])
+
+bestitrcost = np.zeros(maxite)
+
+for u in range(maxite):
+    bestitrcost[u] = sum(q[:, u])
+
+plt.plot(bestitrcost)
+plt.show()

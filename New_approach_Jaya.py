@@ -34,8 +34,8 @@ NUM_HOUR = 24
 genmat = np.zeros((NUM_HOUR, NUM_DER))
 bestcost = np.zeros((NUM_HOUR, 1))
 NUM_SOLUTION = 100
-population = np.zeros((NUM_SOLUTION, NUM_HOUR * NUM_DER))
-population_copy = np.zeros((NUM_SOLUTION, NUM_HOUR * NUM_DER))
+population = np.zeros((NUM_SOLUTION, NUM_DER))
+population_copy = np.zeros((NUM_SOLUTION, NUM_DER))
 NUM_ITERATIONS = 100
 q = np.zeros((NUM_HOUR, NUM_ITERATIONS))
 max_limit = [200, 80, 50, 35, 30, 40]
@@ -45,7 +45,6 @@ ft = np.zeros(NUM_SOLUTION)
 new_population = np.zeros(NUM_SOLUTION)
 
 for hour in range(NUM_HOUR):
-    # print(hour)
     for a in range(NUM_SOLUTION):
         sixth_value = -100
 
@@ -61,9 +60,8 @@ for hour in range(NUM_HOUR):
                 t = t + population[a, j]
             population[a, NUM_DER - 1] = L[hour] - t
             sixth_value = population[a, NUM_DER - 1]
-    print(population)
 
-    new_population[a] = forpapercostfun(P=population[a, :])
+        new_population[a] = forpapercostfun(P=population[a, :])
 
     mem = population
     min_cost, min_index = np.min(new_population), np.argmin(new_population)
@@ -76,7 +74,6 @@ for hour in range(NUM_HOUR):
         max_cost, max_index = np.max(new_population), np.argmax(new_population)
         worstpop = max_index
 
-        npum = np.ceil(NUM_SOLUTION * np.random.rand(1, NUM_SOLUTION))
         for i in range(NUM_SOLUTION):
             for j in range(NUM_DER):
                 r1 = np.random.rand()
@@ -104,18 +101,17 @@ for hour in range(NUM_HOUR):
                     population[i, j] = max_limit[j]
                 summ = summ + population[i, j]
 
-            population[i, NUM_DER] = L[hour] - summ
+            population[i, NUM_DER - 1] = L[hour] - summ
 
-            if population[i, NUM_DER] < min_limit[NUM_DER]:
-                population[i, NUM_DER] = min_limit[NUM_DER]
-            elif population[i, NUM_DER] > max_limit[NUM_DER]:
-                population[i, NUM_DER] = max_limit[NUM_DER]
+            if population[i, NUM_DER - 1] < min_limit[NUM_DER - 1]:
+                population[i, NUM_DER - 1] = min_limit[NUM_DER - 1]
+            elif population[i, NUM_DER - 1] > max_limit[NUM_DER - 1]:
+                population[i, NUM_DER - 1] = max_limit[NUM_DER - 1]
 
             if np.sum(population[i, :]) != L[hour]:
                 population[i, :] = population_copy[i, :]
 
-            ft[i] = forpapercostfun(population=population[i, :])
-
+            ft[i] = forpapercostfun(P=population[i, :])
         population_copy = population
         for i in range(NUM_SOLUTION):
             if ft[i] < new_population[i]:
@@ -124,9 +120,13 @@ for hour in range(NUM_HOUR):
 
         min_cost, min_index = np.min(new_population), np.argmin(new_population)
         bestpop = mem[min_index, :]
+
         bestcost[hour] = min_cost
+
         genmat[hour, :] = population[min_index, :]
         q[hour, itr] = min_cost
+    print(q)
+
 
 totalcost = np.sum(bestcost)
 tch = np.zeros((NUM_HOUR, 1))
@@ -138,5 +138,7 @@ bestitrcost = np.zeros(NUM_ITERATIONS)
 for u in range(NUM_ITERATIONS):
     bestitrcost[u] = np.sum(q[:, u])
 
+
+print(bestitrcost)
 plt.plot(bestitrcost)
 plt.show()
