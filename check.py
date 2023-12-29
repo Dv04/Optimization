@@ -5,10 +5,10 @@ from constants import capacity_dict
 
 
 def check_output():
-    with open("best_solution_new.csv", newline="") as csvfile:
+    with open("data1.csv", newline="") as csvfile:
         reader = csv.reader(csvfile, delimiter=",")
         data = list(reader)
-        data = np.array(data[1])
+        data = np.array(data[-1])
         data = list(map(float, data))
 
         falseCtn = 0
@@ -67,3 +67,6 @@ def check_output():
             )
 
         print("\n\nHour demand matched: ", ctn, "times.")
+
+
+check_output()

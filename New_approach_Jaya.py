@@ -168,10 +168,10 @@ NUM_DER = 6
 NUM_HOUR = 24
 genmat = np.zeros((NUM_HOUR, NUM_DER))
 bestcost = np.zeros((NUM_HOUR, 1))
-NUM_SOLUTION = 100
+NUM_SOLUTION = 500
 population = np.zeros((NUM_SOLUTION, NUM_DER))
 population_copy = np.zeros((NUM_SOLUTION, NUM_DER))
-NUM_ITERATIONS = 10
+NUM_ITERATIONS = 1000
 q = np.zeros((NUM_HOUR, NUM_ITERATIONS))
 max_limit = [200, 80, 50, 35, 30, 40]
 min_limit = [50, 20, 15, 10, 10, 12]
@@ -202,9 +202,10 @@ for hour in range(NUM_HOUR):
 
     mem = population
 
-    population_copy = population
+    population_copy = population.copy()
 
     for itr in range(NUM_ITERATIONS):
+        print(hour, itr)
         min_cost, min_index = np.min(new_population), np.argmin(new_population)
         with open("data1.txt", "w") as f:
             f.write(str(new_population) + "\n" + str(min_cost) + "\n" + str(min_index))
@@ -241,21 +242,21 @@ for hour in range(NUM_HOUR):
                 summ = summ + population[i, j]
 
             population[i, NUM_DER - 1] = L[hour] - summ
-
             if population[i, NUM_DER - 1] < min_limit[NUM_DER - 1]:
                 population[i, NUM_DER - 1] = min_limit[NUM_DER - 1]
             elif population[i, NUM_DER - 1] > max_limit[NUM_DER - 1]:
                 population[i, NUM_DER - 1] = max_limit[NUM_DER - 1]
 
             if np.sum(population[i, :]) != L[hour]:
-                population[i, :] = population_copy[i, :]
+                population[i, :] = population_copy[i, :].copy()
 
             ft[i] = forpapercostfun(P=population[i, :])
-        print(np.sum(population_copy[-1, :]))
-        population_copy = population
+
+        population_copy = population.copy()
+
         for i in range(NUM_SOLUTION):
             if ft[i] < new_population[i]:
-                mem[i, :] = population[i, :]
+                mem[i, :] = population[i, :].copy()
 
                 new_population[i] = ft[i]
 
@@ -264,7 +265,7 @@ for hour in range(NUM_HOUR):
 
         bestcost[hour] = min_cost
 
-        genmat[hour, :] = population[min_index, :]
+        genmat[hour, :] = population[min_index, :].copy()
         q[hour, itr] = min_cost
 
     final_res[:, hour * 6 : (hour + 1) * 6] = population
@@ -281,7 +282,8 @@ for u in range(NUM_ITERATIONS):
     bestitrcost[u] = np.sum(q[:, u])
 
 check_output()
-
+print(bestitrcost)
+final_res[:, -1] = bestitrcost
 pd.DataFrame(final_res).to_csv("data1.csv", index=False)
 plt.plot(bestitrcost)
 plt.show()
