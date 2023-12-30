@@ -45,10 +45,7 @@ def check_output():
                 falseCtn += 1
 
         if falseCtn == 0:
-            # make the print statement in color
             print("\033[92m" + "\n\nAll values are within bounds.\n\n" + "\033[0m")
-
-            # print("\n\nAll values are within bounds.\n\n")
         else:
             print("Values out of bounds: ", falseCtn)
 
@@ -69,4 +66,5 @@ def check_output():
         print("\n\nHour demand matched: ", ctn, "times.")
 
 
-check_output()
+if __name__ == "__main__":
+    check_output()
