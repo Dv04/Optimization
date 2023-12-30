@@ -5,12 +5,13 @@ import csv
 from constants import capacity_dict
 from cost import calculate_cost
 from check import check_output
-
+import math
+import random
 
 NUM_DER = 6
 NUM_HOUR = 24
 NUM_SOLUTION = 500
-NUM_ITERATIONS = 1000
+NUM_ITERATIONS = 2000
 
 genmat = np.zeros((NUM_HOUR, NUM_DER))
 bestcost = np.zeros((NUM_HOUR, 1))
@@ -21,7 +22,8 @@ mem = np.zeros((NUM_SOLUTION, NUM_DER))
 ft = np.zeros(NUM_SOLUTION)
 new_population = np.zeros(NUM_SOLUTION)
 final_res = np.zeros((NUM_SOLUTION, NUM_DER * NUM_HOUR + 1))
-
+x = 1
+y = 5
 
 for hour in range(NUM_HOUR):
     for a in range(NUM_SOLUTION):
@@ -52,6 +54,8 @@ for hour in range(NUM_HOUR):
     population_copy = population.copy()
 
     for itr in range(NUM_ITERATIONS):
+        R = math.floor((y - x) * random.random() + x)
+        A = (R - itr) * ((R) / NUM_ITERATIONS)
         print("Hour: ", hour, " | Iteration: ", itr)
         min_cost, min_index = np.min(new_population), np.argmin(new_population)
         with open("data1.txt", "w") as f:
@@ -63,14 +67,13 @@ for hour in range(NUM_HOUR):
 
         for i in range(NUM_SOLUTION):
             for j in range(NUM_DER):
-                r1 = np.random.rand()
-                r2 = np.random.rand()
+                C = 2 * np.random.rand()
 
-                population[i, j] = (
-                    population[i, j]
-                    + r1 * (mem[bestpop, j] - population[i, j])
-                    - r2 * (mem[worstpop, j] - population[i, j])
+                new_vec = A * population[i, j] + abs(
+                    C * (mem[bestpop, j] - population[i, j])
                 )
+                new_final = mem[bestpop, j] - new_vec
+                population[i, j] = new_final
 
         for i in range(NUM_SOLUTION):
             for j in range(NUM_DER - 1):
@@ -130,10 +133,11 @@ bestitrcost = np.zeros(NUM_ITERATIONS)
 for u in range(NUM_ITERATIONS):
     bestitrcost[u] = np.sum(q[:, u])
 
+print("Best iteration cost dictionary: ", bestitrcost)
+final_res[:, -1] = bestitrcost
+
 pd.DataFrame(final_res).to_csv("data1.csv", index=False)
 check_output()
 
-print("Best iteration cost dictionary: ", bestitrcost)
-final_res[:, -1] = bestitrcost
 plt.plot(bestitrcost)
 plt.show()

@@ -1,17 +1,18 @@
 import numpy as np
+from constants import capacity_dict
 
 
 # Define the cost function as per the given equation.
 def calculate_cost(
-    H: int,
-    DER: int,
     P: list,
-    a: list,
-    b: list,
-    c: list,
-    e: list,
-    theta: list,
-    P_min: list,
+    H: int = 24,
+    DER: int = 6,
+    a: list = capacity_dict["A"],
+    b: list = capacity_dict["B"],
+    c: list = capacity_dict["C"],
+    e: list = capacity_dict["D"],
+    theta: list = capacity_dict["E"],
+    P_min: list = capacity_dict["min_capacity"],
 ) -> float:
     """
     Calculate the cost function F1 based on the provided parameters.
@@ -24,19 +25,10 @@ def calculate_cost(
     :param P_min: array - the P_min values for each k, should be a 1D array of length DER
     :return: float - the computed cost
     """
-    count = 0
     F1 = 0
-    # Perform the double summation
-    for t in range(1, H + 1):
-        for k in range(1, DER + 1):
-            F1 += (
-                (a[k - 1] * P[(t - 1) * 6 + k - 1] ** 2)
-                + (b[k - 1] * P[(t - 1) * 6 + k - 1])
-                + c[k - 1]
-            ) + abs(
-                e[k - 1]
-                * np.sin(theta[k - 1] * (P_min[k - 1] - P[(t - 1) * 6 + k - 1]))
-            )
-            count += 1
-
-    return F1, count
+    # Assuming P now only represents one hour
+    for k in range(1, DER + 1):
+        F1 += ((a[k - 1] * P[k - 1] ** 2) + (b[k - 1] * P[k - 1]) + c[k - 1]) + abs(
+            e[k - 1] * np.sin(theta[k - 1] * (P_min[k - 1] - P[k - 1]))
+        )
+    return F1
