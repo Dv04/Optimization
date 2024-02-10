@@ -9,8 +9,8 @@ from check import check_output
 
 NUM_DER = 6
 NUM_HOUR = 24
-NUM_SOLUTION = 500
-NUM_ITERATIONS = 1000
+NUM_SOLUTION = 100
+NUM_ITERATIONS = 100
 
 genmat = np.zeros((NUM_HOUR, NUM_DER))
 bestcost = np.zeros((NUM_HOUR, 1))
